@@ -30,7 +30,7 @@ def clean_quality(file):
 
     # Replace values in 'Variable Name' column
     quality['Variable Name'] = quality['Variable Name'].replace({
-        'Family Support Service Requirements Benchmark': 'Monitoring Benchmark',
+        'Family Support Service Requirements Benchmark': 'Continuous Quality Improvement System Benchmark',
         'Monitoring Benchmark': 'Continuous Quality Improvement System Benchmark',
         'Early Learning Standards Benchmark': 'Early Learning & Development Standards Benchmark',
         'Teacher In-Service Benchmark': 'Staff Professional Development Benchmark'
@@ -68,10 +68,13 @@ def merge_data(poverty, spending, enrollment, quality):
     # Merge data and quality
     data = pd.merge(data, quality, on=['State Name', 'Year'], how='outer')
     
+    # Replace values in all columns
+    data = data.replace({'Yes': 1, 'No': 0, 'No program': 0, 'NA - Program level only': 1, '': 'NOT COLLECTED', 'Not reported': 'NOT REPORTED'})
+
     # Program Indicators
-    data['3 Year Old Program'] = data['Percentage of 3-year-olds Enrolled in State Pre-K'].apply(lambda x: 'No' if x == 0 else 'Yes')
+    data['3 Year Old Program'] = data['Percentage of 3-year-olds Enrolled in State Pre-K'].apply(lambda x: '0' if x == 0 else '1')
     
-    data['4 Year Old Program'] = data['Percentage of 4-year-olds Enrolled in State Pre-K'].apply(lambda x: 'No' if x == 0 else 'Yes')
+    data['4 Year Old Program'] = data['Percentage of 4-year-olds Enrolled in State Pre-K'].apply(lambda x: '0' if x == 0 else '1')
     
     # Sort by 'State Name' and 'Year'
     data = data.sort_values(by=['State Name', 'Year']).reset_index(drop=True)
