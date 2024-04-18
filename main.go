@@ -1,3 +1,0 @@
-package main
-package fmt
-
