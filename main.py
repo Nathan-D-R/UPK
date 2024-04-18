@@ -72,12 +72,62 @@ def merge_data(poverty, spending, enrollment, quality):
     data = data.replace({'Yes': 1, 'No': 0, 'No program': 0, 'NA - Program level only': 1, '': 'NOT COLLECTED', 'Not reported': 'NOT REPORTED'})
 
     # Program Indicators
-    data['3 Year Old Program'] = data['Percentage of 3-year-olds Enrolled in State Pre-K'].apply(lambda x: '0' if x == 0 else '1')
+    data['Program_3yo'] = data['Percentage of 3-year-olds Enrolled in State Pre-K'].apply(lambda x: 0 if x == 0 else 1)
     
-    data['4 Year Old Program'] = data['Percentage of 4-year-olds Enrolled in State Pre-K'].apply(lambda x: '0' if x == 0 else '1')
+    data['Program_4yo'] = data['Percentage of 4-year-olds Enrolled in State Pre-K'].apply(lambda x: 0 if x == 0 else 1)
     
     # Sort by 'State Name' and 'Year'
     data = data.sort_values(by=['State Name', 'Year']).reset_index(drop=True)
+
+    return data
+
+def rename_columns(data):
+    data = data.rename(columns={'State Name': 'State'})
+    data = data.rename(columns={'Poverty Rate': 'Poverty'})
+    data.columns = data.columns.str.replace(' ', '_')
+    data.columns = data.columns.str.replace('_\(2022_Dollars\)', '')
+    data.columns = data.columns.str.replace('All-Reported', 'All')
+    data.columns = data.columns.str.replace('Total_', '')
+    data.columns = data.columns.str.replace('_in_State_Pre-K', '')
+    data.columns = data.columns.str.replace('_Benchmark', '_B')
+    data.columns = data.columns.str.replace('3-year-olds', '3yo')
+    data.columns = data.columns.str.replace('4-year-olds', '4yo')
+    data.columns = data.columns.str.replace('Percentage_of', 'P')
+    data.columns = data.columns.str.replace('Number_of', 'N')
+    data.columns = data.columns.str.replace('&', 'and')
+
+
+    return data
+
+def fill_missing(data):
+    # List of columns to apply the filling logic
+    numeric_cols = [
+        'All_Spending_per_Child', 'State_Spending_per_Child', 
+        'All_Spending', 'State_Pre-K_Spending', 'N_3yo_Enrolled', 
+        'N_4yo_Enrolled', 'P_3yo_Enrolled', 'P_4yo_Enrolled', 
+        'State_Pre-K_Enrollment'
+    ]
+    
+    # Replace "NOT REPORTED" with NaN (null) in the specified columns
+    data[numeric_cols] = data[numeric_cols].replace("NOT REPORTED", pd.NA)
+    
+    # Convert columns with potential textual representations of numbers to numeric, forcing errors to NA
+    for col in numeric_cols:
+        data[col] = pd.to_numeric(data[col], errors='coerce')
+
+    # Group by state to ensure that the filling logic is applied within each state
+    grouped = data.groupby('State')
+
+    # Function to apply the specified filling logic to a column within each group
+    def fill_na_within_group(series):
+        # Forward fill then backward fill for ends
+        series = series.fillna(method='ffill').fillna(method='bfill')
+        # Interpolate for mid values
+        return series.interpolate()
+
+    # Apply the filling logic to each group for the specified numeric columns
+    for col in numeric_cols:
+        data[col] = grouped[col].transform(fill_na_within_group)
 
     return data
 
@@ -91,8 +141,16 @@ def main():
     # Merge data on 'State Name' and 'Year'
     data = merge_data(poverty, spending, enrollment, quality)
     
-    # Export to data.csv
-    pd.DataFrame(data).to_csv('data.csv', index=False)
+    data = rename_columns(data)
+    
+    data = fill_missing(data)
+
+    # Remove States "National" and "Guam"
+    data = data[data['State'] != 'National']
+    data = data[data['State'] != 'Guam']
+
+    # Export to data.xlsx
+    data.to_excel('./data.xlsx', index=False)
 
 # Entry Point
 if __name__ == '__main__':
