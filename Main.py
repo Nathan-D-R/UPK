@@ -22,7 +22,7 @@ def run_sas(script_name):
     print(f"Ran script {script_name}")
 
 urls = [
-    "https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-poverty-people/hstpov19.xls",
+    "https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-poverty-people/hstpov19.xlsx",
     "https://nieer.org/sites/default/files/2023-12/state_preschool_quality_standards_met.xlsx",
     "https://nieer.org/sites/default/files/2023-12/state_preschool_spending.xlsx",
     "https://nieer.org/sites/default/files/2023-12/state_preschool_enrollment.xlsx"
@@ -34,7 +34,7 @@ def main():
 
     run_python("DataCleaning.py")
 
-    run_sas("Regression.sas")
+    #run_sas("Regression.sas")
 
 if __name__ == "__main__":
     main()
